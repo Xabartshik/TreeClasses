@@ -1,5 +1,5 @@
 #include "BinarySearchTree.h"
-// Сделал Ошлаков Жанил, ИВТ-22
+// Сделал Ошлаков Dанил, ИВТ-22
 /*
    (2)
    / \
@@ -20,15 +20,20 @@ int main() {
     bst.insert(15);
     bst.insert(2);
     bst.insert(7);
+    bst.insert(8);
+    bst.insert(6);
     bst.insert(12);
     bst.insert(20);
 
     std::cout << "Число узлов: " << bst.countNodes() << std::endl; // Вывод: 7
     std::cout << "Глубина древа: " << bst.getDepth() << std::endl; // Вывод: 4
 
-    std::cout << "Рисуночек древа:\n";
+    std::cout << bst.succesor(10) << endl;
     bst.printTree(); // Вывод дерева в виде дерева
-
+    cout << endl;
+    bst.remove(5);
+    cout << endl;
+    bst.printTree(); // Вывод дерева в виде дерева
     bst.clear();
 
     return 0;

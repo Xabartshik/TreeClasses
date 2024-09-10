@@ -5,7 +5,7 @@
 #include <cassert>
 #include <functional>
 #include <vector>
-
+#include <stack>
 
 using namespace std;
 // Класс Node представляет собой узел двусвязного списка.
@@ -109,119 +109,120 @@ class BinarySearchTree {
 private:
     TreeNode<T>* root;
 
-    void deleteTree(TreeNode<T>* node) {
-        if (node) {
-            deleteTree(node->n_left);
-            deleteTree(node->n_right);
-            delete node;
-        }
-    }
+    // Поиск следующего наибольшего элемента, возвращает узел, иначе нуллптр
+    TreeNode<T>* searchSucc(TreeNode<T>* node, const T& value) {
+        TreeNode<T>* prev = nullptr;
+        TreeNode<T>* current = root;
 
-    // Вспомогательный метод для рекурсивного поиска узла
-    TreeNode<T>* search(TreeNode<T>* node, const T& value) const {
-        if (node == nullptr) {
+        // Найдем узел с заданным значением и сохраним путь в стек
+        while (current != nullptr) {
+            if (current->n_data == value) {
+                break;
+            }
+            else if (value < current->n_data) {
+                prev = current;
+                current = current->n_left;
+            }
+            else {
+                prev = current;
+                current = current->n_right;
+            }
+        }
+        if (current == nullptr) {
             return nullptr; // Значение не найдено
         }
+        // Если у текущего узла есть правый потомок, то следующий наибольший элемент - это наименьший элемент в правом поддереве
+        if (current->n_right != nullptr) {
+            current = current->n_right;
+            while (current->n_left != nullptr) {
+                current = current->n_left;
+            }
+            return current;
+        }
+        // Иначе ищем следующий наибольший элемент, поднимаясь вверх по дереву
+        if (prev)
+            return prev;
+        else
+            return nullptr;
+    }
 
-        if (node->n_data == value) {
-            return node; // Значение найдено, возвращаем узел
+    void deleteNodeRecursive(TreeNode<T>** node, const T& value) {
+        if (*node == nullptr) {
+            return; // Узел не найден
         }
-        else if (value < node->n_data) {
-            return search(node->n_left, value); // Ищем в левом поддереве
+
+        // Если значение меньше, чем значение в текущем узле, идем влево
+        if (value < (*node)->n_data) {
+            deleteNodeRecursive(&(*node)->n_left, value);
         }
+        // Если значение больше, чем значение в текущем узле, идем вправо
+        else if (value > (*node)->n_data) {
+            deleteNodeRecursive(&(*node)->n_right, value);
+        }
+        // Найден узел для удаления
         else {
-            return search(node->n_right, value); // Ищем в правом поддереве
+            TreeNode<T>* nodeToDelete = *node;
+
+            // Если у узла нет дочерних узлов, просто удаляем его
+            if ((*node)->n_left == nullptr && (*node)->n_right == nullptr) {
+                *node = nullptr;
+                delete nodeToDelete;
+            }
+            // Если у узла есть только левый дочерний узел, присоединяем его к родителю
+            else if ((*node)->n_left != nullptr && (*node)->n_right == nullptr) {
+                *node = (*node)->n_left;
+                nodeToDelete->n_left = nullptr;
+                delete nodeToDelete;
+            }
+            // Если у узла есть только правый дочерний узел, присоединяем его к родителю
+            else if ((*node)->n_left == nullptr && (*node)->n_right != nullptr) {
+                *node = (*node)->n_right;
+                nodeToDelete->n_right = nullptr;
+                delete nodeToDelete;
+            }
+            // Если у узла есть оба дочерних узла, ищем следующий наибольший элемент и меняем местами
+            else {
+                TreeNode<T>* nextLargest = searchSucc(*node, (*node)->n_data);
+                (*node)->n_data = nextLargest->n_data;
+                deleteNodeRecursive(&(*node)->n_right, nextLargest->n_data);
+            }
         }
     }
 
-    // Препорядковый обход (Near, Left, Right)
-    void preorder(TreeNode<T>* node, vector<T>& result) const {
-        if (node == nullptr) return;
-        result.push_back(node->n_data);
-        preorder(node->n_left, result);
-        preorder(node->n_right, result);
-    }
-
-    // Инордерный обход (left, Near, Right)
-    void inorder(TreeNode<T>* node, vector<T>& result) const {
-        if (node == nullptr) return;
-        inorder(node->n_left, result);
-        result.push_back(node->n_data);
-        inorder(node->n_right, result);
-    }
-
-    // Постпорядковый обход (Left, Right, Near)
-    void postorder(TreeNode<T>* node, vector<T>& result) const {
-        if (node == nullptr) return;
-        postorder(node->n_left, result);
-        postorder(node->n_right, result);
-        result.push_back(node->n_data);
-    }
-
-    // Применение функции к каждому узлу
-    void applyFunction(TreeNode<T>* node, const function<void(T&)>& func) {
-        if (node == nullptr) return;
-        func(node->n_data);
-        applyFunction(node->n_left, func);
-        applyFunction(node->n_right, func);
-    }
-
-    // Рекурсивная функция подсчета узлов (препорядковый обход)
-    size_t countNodesRecursive(const TreeNode<T>* node) const {
-        if (node == nullptr) return 0;
-        //Возвращаем количество узлов слева и справа + сам узел
-        return 1 + countNodesRecursive(node->n_left) + countNodesRecursive(node->n_right);
-    }
-    // Рекурсивная функция определения глубины (инордерный обход)
-    int getDepthRecursive(const TreeNode<T>* node) const {
-        if (node == nullptr) return -1;
-        int leftDepth = getDepthRecursive(node->n_left);
-        int rightDepth = getDepthRecursive(node->n_right);
-        return 1 + max(leftDepth, rightDepth);
-    }
-
-    void printTreeRecursive(const TreeNode<T>* node, int level) const {
-        if (node == nullptr) return;
-
-        // Печать правого поддерева
-        printTreeRecursive(node->n_right, level + 1);
-
-        // Печать текущего узла. Число пропусков определяется уровнем
-        for (int i = 0; i < level; i++) {
-            cout << "    ";
-        }
-        cout << node->n_data << endl;
-
-        // Печать левого поддерева
-        printTreeRecursive(node->n_left, level + 1);
-    }
 
 public:
 
     BinarySearchTree() :root(nullptr) {}
-    BinarySearchTree(T value){
-        root = TreeNode(value);
+    BinarySearchTree(T value) {
+        root = new TreeNode<T>(value);
     }
     ~BinarySearchTree() {
         deleteTree(root);
     }
-
+    /*
     enum OrderType {
         PREORDER, // NLR
         INORDER,  // LNR
         POSTORDER // LRN
     };
-
-
+    */
+    // Копировать древо. Возвращает древо
+    BinarySearchTree copy()
+    {
+        BinarySearchTree tree;
+        copyTreeRecursive(root, tree);
+        return tree;
+    }
+    // Очистка древа
     void clear() {
         deleteTree(root);   // Очищаем дерево
         root = nullptr; // Обнуляем корень дерева
     }
- 
+    // Применить функцию к элементам древа
     void apply(const function<void(T&)>& func) {
         applyFunction(root, func);
     }
-
+    // Добавить значение к узлу в виде нового узла
     static void addNode(TreeNode<T>* node, T value) {
         if (value < node->n_data) {
             if (node->n_left) {
@@ -243,7 +244,7 @@ public:
             }
         }
     }
-
+    // Добавить значение дереву
     void insert(const T& value) {
         if (!root) {
             root = new TreeNode<T>(value);
@@ -253,7 +254,7 @@ public:
             addNode(root, value);
         }
     }
-
+    // Вывести значение узла на экран
     void printNode(TreeNode<T>* node) const {
         if (node) {
             cout << node->n_data << endl;
@@ -283,7 +284,7 @@ public:
         postorder(root, result);
         return result;
     }
-
+    // Печать дерева NLR
     void printPreOrder() const {
         vector<T> result = toArrayPreOrder();
         for (const T& val : result) {
@@ -314,52 +315,50 @@ public:
     void printTree() const {
         printTreeRecursive(root, 0);
     }
+    void remove(T value)
+    {
+        deleteNodeRecursive(&root, value);
+    }
 
     // Функция определения глубины дерева
     int getDepth() const {
         return getDepthRecursive(root);
     }
-
+    // Функция подсчета числа узлов
     size_t countNodes() const {
         return countNodesRecursive(root);
     }
-
-
-
-    // Препорядковое применение функции
-    void applyPreorder(TreeNode<T>* node, const function<void(T&)>& func) {
-        if (node == nullptr) return;
-        func(node->n_data);
-        applyPreorder(node->n_left, func);
-        applyPreorder(node->n_right, func);
+    // Проверка на пустоту дерева
+    bool isEmpty() const {
+        if (root != nullptr)
+            return false;
+        else
+            return true;
     }
 
-    // Инордерное применение функции
-    void applyInorder(TreeNode<T>* node, const function<void(T&)>& func) {
-        if (node == nullptr) return;
-        applyInorder(node->n_left, func);
-        func(node->n_data);
-        applyInorder(node->n_right, func);
+    // Поиск следующего наибольшего элемента, возвращает значение, иначе бросает исключение
+    T succesor(const T& value) {
+        TreeNode<T>* nextNode = searchSucc(root, value);
+        if (nextNode == nullptr) {
+            throw std::out_of_range("Значение не найдено в дереве");
+        }
+        return nextNode->n_data;
     }
 
-    // Постпорядковое применение функции
-    void applyPostorder(TreeNode<T>* node, const function<void(T&)>& func) {
-        if (node == nullptr) return;
-        applyPostorder(node->n_left, func);
-        applyPostorder(node->n_right, func);
-        func(node->n_data);
-    }
+
 
 
 
     // Метод для поиска узла по значению
     TreeNode<T>* search(const T& value) const {
-        return search(root, value); // Запускаем поиск с корневого узла
+        return searchRecursive(root, value); // Запускаем поиск с корневого узла
     }
-
+    // Получить указатель на корень
     TreeNode<T>* get_root() const {
         return root;
     }
+
+
 
     // Функция тестирования
     static void runTests() {
@@ -495,3 +494,129 @@ public:
     }
 
 };
+template<typename T>
+// Рекурсивная функция подсчета узлов (препорядковый обход)
+size_t countNodesRecursive(const TreeNode<T>* node) {
+    if (node == nullptr) return 0;
+    //Возвращаем количество узлов слева и справа + сам узел
+    return 1 + countNodesRecursive(node->n_left) + countNodesRecursive(node->n_right);
+}
+template<typename T>
+// Рекурсивная функция определения глубины (инордерный обход)
+int getDepthRecursive(const TreeNode<T>* node) {
+    if (node == nullptr) return -1;
+    int leftDepth = getDepthRecursive(node->n_left);
+    int rightDepth = getDepthRecursive(node->n_right);
+    return 1 + max(leftDepth, rightDepth);
+}
+template<typename T>
+// Рекурсивный вывод дерева
+void printTreeRecursive(const TreeNode<T>* node, int level) {
+    if (node == nullptr) return;
+
+    // Печать правого поддерева
+    printTreeRecursive(node->n_right, level + 1);
+
+    // Печать текущего узла. Число пропусков определяется уровнем
+    for (int i = 0; i < level; i++) {
+        cout << "    ";
+    }
+    cout << node->n_data << endl;
+
+    // Печать левого поддерева
+    printTreeRecursive(node->n_left, level + 1);
+}
+template<typename T>
+void deleteTree(TreeNode<T>* node) {
+    if (node) {
+        deleteTree(node->n_left);
+        deleteTree(node->n_right);
+        delete node;
+    }
+}
+
+// Сделать функциями все рекурсивные методы
+template<typename T>
+// Глубокое копирование дерева NLR
+void copyTreeRecursive(TreeNode<T>* node, BinarySearchTree<T>& tree)
+{
+    if (node != nullptr)
+    {
+        tree.insert(node->n_data);
+        copyTreeRecursive(node->n_left, tree);
+        copyTreeRecursive(node->n_right, tree);
+    }
+}
+template<typename T>
+// Вспомогательный метод для рекурсивного поиска узла
+TreeNode<T>* searchRecursive(TreeNode<T>* node, const T& value) {
+    if (node == nullptr) {
+        return nullptr; // Значение не найдено
+    }
+
+    if (node->n_data == value) {
+        return node; // Значение найдено, возвращаем узел
+    }
+    else if (value < node->n_data) {
+        return searchRecursive(node->n_left, value); // Ищем в левом поддереве
+    }
+    else {
+        return searchRecursive(node->n_right, value); // Ищем в правом поддереве
+    }
+}
+template<typename T>
+// Препорядковый обход (Near, Left, Right)
+void preorder(TreeNode<T>* node, vector<T>& result) {
+    if (node == nullptr) return;
+    result.push_back(node->n_data);
+    preorder(node->n_left, result);
+    preorder(node->n_right, result);
+}
+template<typename T>
+// Инордерный обход (left, Near, Right)
+void inorder(TreeNode<T>* node, vector<T>& result) {
+    if (node == nullptr) return;
+    inorder(node->n_left, result);
+    result.push_back(node->n_data);
+    inorder(node->n_right, result);
+}
+template<typename T>
+// Постпорядковый обход (Left, Right, Near)
+void postorder(TreeNode<T>* node, vector<T>& result) {
+    if (node == nullptr) return;
+    postorder(node->n_left, result);
+    postorder(node->n_right, result);
+    result.push_back(node->n_data);
+}
+template<typename T>
+// Применение функции к каждому узлу NLR
+void applyFunction(TreeNode<T>* node, const function<void(T&)>& func) {
+    if (node == nullptr) return;
+    func(node->n_data);
+    applyFunction(node->n_left, func);
+    applyFunction(node->n_right, func);
+}
+template<typename T>
+// Препорядковое применение функции
+void applyPreorder(TreeNode<T>* node, const function<void(T&)>& func) {
+    if (node == nullptr) return;
+    func(node->n_data);
+    applyPreorder(node->n_left, func);
+    applyPreorder(node->n_right, func);
+}
+template<typename T>
+// Инордерное применение функции
+void applyInorder(TreeNode<T>* node, const function<void(T&)>& func) {
+    if (node == nullptr) return;
+    applyInorder(node->n_left, func);
+    func(node->n_data);
+    applyInorder(node->n_right, func);
+}
+template<typename T>
+// Постпорядковое применение функции
+void applyPostorder(TreeNode<T>* node, const function<void(T&)>& func) {
+    if (node == nullptr) return;
+    applyPostorder(node->n_left, func);
+    applyPostorder(node->n_right, func);
+    func(node->n_data);
+}
