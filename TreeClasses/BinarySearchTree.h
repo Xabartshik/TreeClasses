@@ -109,85 +109,7 @@ class BinarySearchTree {
 private:
     TreeNode<T>* root;
 
-    // Поиск следующего наибольшего элемента, возвращает узел, иначе нуллптр
-    TreeNode<T>* searchSucc(TreeNode<T>* node, const T& value) {
-        TreeNode<T>* prev = nullptr;
-        TreeNode<T>* current = root;
-
-        // Найдем узел с заданным значением и сохраним путь в стек
-        while (current != nullptr) {
-            if (current->n_data == value) {
-                break;
-            }
-            else if (value < current->n_data) {
-                prev = current;
-                current = current->n_left;
-            }
-            else {
-                prev = current;
-                current = current->n_right;
-            }
-        }
-        if (current == nullptr) {
-            return nullptr; // Значение не найдено
-        }
-        // Если у текущего узла есть правый потомок, то следующий наибольший элемент - это наименьший элемент в правом поддереве
-        if (current->n_right != nullptr) {
-            current = current->n_right;
-            while (current->n_left != nullptr) {
-                current = current->n_left;
-            }
-            return current;
-        }
-        // Иначе ищем следующий наибольший элемент, поднимаясь вверх по дереву
-        if (prev)
-            return prev;
-        else
-            return nullptr;
-    }
-
-    void deleteNodeRecursive(TreeNode<T>** node, const T& value) {
-        if (*node == nullptr) {
-            return; // Узел не найден
-        }
-
-        // Если значение меньше, чем значение в текущем узле, идем влево
-        if (value < (*node)->n_data) {
-            deleteNodeRecursive(&(*node)->n_left, value);
-        }
-        // Если значение больше, чем значение в текущем узле, идем вправо
-        else if (value > (*node)->n_data) {
-            deleteNodeRecursive(&(*node)->n_right, value);
-        }
-        // Найден узел для удаления
-        else {
-            TreeNode<T>* nodeToDelete = *node;
-
-            // Если у узла нет дочерних узлов, просто удаляем его
-            if ((*node)->n_left == nullptr && (*node)->n_right == nullptr) {
-                *node = nullptr;
-                delete nodeToDelete;
-            }
-            // Если у узла есть только левый дочерний узел, присоединяем его к родителю
-            else if ((*node)->n_left != nullptr && (*node)->n_right == nullptr) {
-                *node = (*node)->n_left;
-                nodeToDelete->n_left = nullptr;
-                delete nodeToDelete;
-            }
-            // Если у узла есть только правый дочерний узел, присоединяем его к родителю
-            else if ((*node)->n_left == nullptr && (*node)->n_right != nullptr) {
-                *node = (*node)->n_right;
-                nodeToDelete->n_right = nullptr;
-                delete nodeToDelete;
-            }
-            // Если у узла есть оба дочерних узла, ищем следующий наибольший элемент и меняем местами
-            else {
-                TreeNode<T>* nextLargest = searchSucc(*node, (*node)->n_data);
-                (*node)->n_data = nextLargest->n_data;
-                deleteNodeRecursive(&(*node)->n_right, nextLargest->n_data);
-            }
-        }
-    }
+   
 
 
 public:
@@ -317,6 +239,8 @@ public:
     }
     void remove(T value)
     {
+        if (isEmpty())
+            throw std::out_of_range("Дерево пустое");
         deleteNodeRecursive(&root, value);
     }
 
@@ -338,6 +262,8 @@ public:
 
     // Поиск следующего наибольшего элемента, возвращает значение, иначе бросает исключение
     T succesor(const T& value) {
+        if (isEmpty())
+            throw std::out_of_range("Дерево пустое");
         TreeNode<T>* nextNode = searchSucc(root, value);
         if (nextNode == nullptr) {
             throw std::out_of_range("Значение не найдено в дереве");
@@ -619,4 +545,85 @@ void applyPostorder(TreeNode<T>* node, const function<void(T&)>& func) {
     applyPostorder(node->n_left, func);
     applyPostorder(node->n_right, func);
     func(node->n_data);
+}
+template<typename T>
+// Поиск следующего наибольшего элемента, возвращает узел, иначе нуллптр
+TreeNode<T>* searchSucc(TreeNode<T>* current, const T& value) {
+    TreeNode<T>* prev = nullptr;
+    //TreeNode<T>* current = root;
+
+    // Найдем узел с заданным значением и сохраним путь в стек
+    while (current != nullptr) {
+        if (current->n_data == value) {
+            break;
+        }
+        else if (value < current->n_data) {
+            prev = current;
+            current = current->n_left;
+        }
+        else {
+            prev = current;
+            current = current->n_right;
+        }
+    }
+    if (current == nullptr) {
+        return nullptr; // Значение не найдено
+    }
+    // Если у текущего узла есть правый потомок, то следующий наибольший элемент - это наименьший элемент в правом поддереве
+    if (current->n_right != nullptr) {
+        current = current->n_right;
+        while (current->n_left != nullptr) {
+            current = current->n_left;
+        }
+        return current;
+    }
+    // Иначе ищем следующий наибольший элемент, поднимаясь вверх по дереву
+    if (prev)
+        return prev;
+    else
+        return nullptr;
+}
+template<typename T>
+// Удаление узла рекурсивно. Не функция, так как тут используется 
+void deleteNodeRecursive(TreeNode<T>** node, const T& value) {
+    if (*node == nullptr) {
+        return; // Узел не найден
+    }
+
+    // Если значение меньше, чем значение в текущем узле, идем влево
+    if (value < (*node)->n_data) {
+        deleteNodeRecursive(&(*node)->n_left, value);
+    }
+    // Если значение больше, чем значение в текущем узле, идем вправо
+    else if (value > (*node)->n_data) {
+        deleteNodeRecursive(&(*node)->n_right, value);
+    }
+    // Найден узел для удаления
+    else {
+        TreeNode<T>* nodeToDelete = *node;
+
+        // Если у узла нет дочерних узлов, просто удаляем его
+        if ((*node)->n_left == nullptr && (*node)->n_right == nullptr) {
+            *node = nullptr;
+            delete nodeToDelete;
+        }
+        // Если у узла есть только левый дочерний узел, присоединяем его к родителю
+        else if ((*node)->n_left != nullptr && (*node)->n_right == nullptr) {
+            *node = (*node)->n_left;
+            nodeToDelete->n_left = nullptr;
+            delete nodeToDelete;
+        }
+        // Если у узла есть только правый дочерний узел, присоединяем его к родителю
+        else if ((*node)->n_left == nullptr && (*node)->n_right != nullptr) {
+            *node = (*node)->n_right;
+            nodeToDelete->n_right = nullptr;
+            delete nodeToDelete;
+        }
+        // Если у узла есть оба дочерних узла, ищем следующий наибольший элемент и меняем местами
+        else {
+            TreeNode<T>* nextLargest = searchSucc(*node, (*node)->n_data);
+            (*node)->n_data = nextLargest->n_data;
+            deleteNodeRecursive(&(*node)->n_right, nextLargest->n_data);
+        }
+    }
 }
