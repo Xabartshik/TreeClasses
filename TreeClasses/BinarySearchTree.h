@@ -365,18 +365,21 @@ void postOrderTraversalIterative(TreeNode<T>* root) {
     if (root == nullptr) {
         return;
     }
-
+    //
     std::stack<TreeNode<T>*> stack;
     TreeNode<T>* current = root;
     TreeNode<T>* lastVisited = nullptr;
-
+    //Если текущий элемент не пустой и стек не пуст -- 
     while (!stack.empty() || current != nullptr) {
+        // заносим левый узел в стек
         if (current != nullptr) {
             stack.push(current);
             current = current->n_left;
         }
+        //переносим элемент дерева в стек
         else {
             TreeNode<T>* peekNode = stack.top();
+            // переход в правый узел
             if (peekNode->n_right != nullptr && lastVisited != peekNode->n_right) {
                 current = peekNode->n_right;
             }
@@ -460,7 +463,70 @@ public:
         POSTORDER // LRN
     };
     */
+    class Iterator {
+    private:
+        std::stack<TreeNode<T>*> nodeStack;
+        TreeNode<T>* currentNode;
 
+    public:
+        Iterator(TreeNode<T>* root) {
+            currentNode = root;
+            pushLeftBranch(root);
+        }
+
+        bool operator!=(const Iterator& other) const {
+            return !nodeStack.empty() || !other.nodeStack.empty();
+        }
+
+        bool hasNext() {
+            return !nodeStack.empty() || currentNode != nullptr;
+        }
+
+        T& operator*() const {
+            return currentNode->n_data;
+        }
+
+
+        T& data(){
+            return currentNode->n_data;
+        }
+
+        Iterator& operator++() {
+            return next();
+        }
+        
+        void reset() {
+            nodeStack.empty();
+            currentNode = root;
+            pushLeftBranch(root);
+        }
+
+        Iterator& next() {
+            if (!hasNext()) {
+                throw std::out_of_range("No more elements in the iterator");
+            }
+            currentNode = nodeStack.top();
+            nodeStack.pop();
+            pushLeftBranch(currentNode->n_right);
+            return *this;
+        }
+
+    private:
+        void pushLeftBranch(TreeNode<T>* node) {
+            while (node != nullptr) {
+                nodeStack.push(node);
+                node = node->n_left;
+            }
+        }
+    };
+
+    Iterator begin() {
+        return Iterator(root);
+    }
+
+    Iterator end() {
+        return Iterator(nullptr);
+    }
     // Копировать древо из other
     void copy(BinarySearchTree& other)
     {
