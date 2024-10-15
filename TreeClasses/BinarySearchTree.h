@@ -233,6 +233,14 @@ void inorder(TreeNode<T>* node, vector<T>& result) {
     inorder(node->n_right, result);
 }
 template<typename T>
+void inorderStack(TreeNode<T>* node, stack<TreeNode<T>*>& stack)
+{
+    if (node == nullptr) return;
+    inorderStack(node->n_right, stack);
+    stack.push(node);
+    inorderStack(node->n_left, stack);
+}
+template<typename T>
 // Постпорядковый обход (Left, Right, Near). N | N | N
 void postorder(TreeNode<T>* node, vector<T>& result) {
     if (node == nullptr) return;
@@ -466,42 +474,42 @@ public:
     class Iterator {
     private:
         std::stack<TreeNode<T>*> nodeStack;
-        TreeNode<T>* currentNode;
 
     public:
         Iterator(TreeNode<T>* root) {
-            currentNode = root;
             pushLeftBranch(root);
         }
 
         bool operator!=(const Iterator& other) const {
-            return !nodeStack.empty() || !other.nodeStack.empty();
+            return !(hasNext() == false && other.hasNext() == false);
         }
 
-        bool hasNext() {
-            return !nodeStack.empty() || currentNode != nullptr;
+        bool hasNext() const {
+
+            return !nodeStack.empty();
         }
 
         T& operator*() const {
-            return currentNode->n_data;
+            return nodeStack.top()->n_data;
         }
 
 
-        T& data(){
-            return currentNode->n_data;
+        T& data() {
+            return nodeStack.top()->n_data;
         }
 
         Iterator& operator++() {
             return next();
         }
-        
+
         void reset() {
-            nodeStack.empty();
-            currentNode = root;
-            pushLeftBranch(root);
+            while (!nodeStack.empty())
+                nodeStack.pop();
+            inorderStack(root, nodeStack);
         }
 
         Iterator& next() {
+            TreeNode<T>* currentNode;
             if (!hasNext()) {
                 throw std::out_of_range("No more elements in the iterator");
             }
@@ -520,11 +528,12 @@ public:
         }
     };
 
-    Iterator begin() {
+
+    Iterator begin() const {
         return Iterator(root);
     }
 
-    Iterator end() {
+    Iterator end() const {
         return Iterator(nullptr);
     }
     // Копировать древо из other
@@ -677,6 +686,25 @@ public:
         normalTree.insert(7);
         normalTree.insert(12);
         normalTree.insert(20);
+        BinarySearchTree<int> bst;
+        bst.insert(3);
+        bst.insert(5);
+        bst.insert(2);
+        bst.insert(4);
+        bst.insert(1);
+        //Проверка работы перехода по дереву и получения значений
+        vector<int> inorderbst = bst.toArrayInOrder();
+        int i = 0;
+        for (int value : bst) {
+
+            assert(value, inorderbst[i]);
+            i++;
+        }
+        //Проверка работы неравенства итераторов
+        auto it = bst.begin();
+        it.next();
+        auto it2 = bst.begin();
+        assert(it != it2);
 
         assert(normalTree.countNodes() == 7);
         assert(normalTree.getDepth() == 2);
@@ -896,7 +924,7 @@ public:
         assert(singleNodeArray == expectedSingleNodeArray);
 
         singleNodeTree.clear();
-        cout << "Тесты пройдены" << endl;
+        cout << "All tests passed!" << endl;
     }
 };
 

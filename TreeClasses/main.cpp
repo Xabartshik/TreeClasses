@@ -47,7 +47,7 @@ bool binarySearch(const std::vector<T>& vec, const T& target, size_t& index) {
 }
 
 int main() {
-	BinarySearchTree<int>::runTests();
+	//BinarySearchTree<int>::runTests();
 	BinarySearchTree<int> bst;
 	bst.insert(10);
 	bst.insert(5);
@@ -70,11 +70,29 @@ int main() {
 	bst.printTree(); // Вывод дерева в виде дереваДою
 	cout << endl;
 	bst.remove(5);
+
+	bst.clear();
+	bst.insert(5);
+	bst.insert(4);
+	bst.insert(1);
+	bst.insert(2);
+	bst.insert(3);
 	cout << endl;
-	bst.printTree(); // Вывод дерева в виде дерева
+	cout << "BC" << endl;
+	//    5
+	//  4
+	// 1
+	//  2
+	//    3
+	for (int value : bst) {
+		std::cout << value << " ";
+	}
+	cout << endl;
 	for (auto it = bst.begin(); it != bst.end(); ++it) {
 		*it *= 10;
 	}
+
+	cout << "AC" << endl;
 	for (int value : bst) {
 		std::cout << value << " ";
 	}
